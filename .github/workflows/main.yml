@@ -1,0 +1,50 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  DATABASE: ${{secrets.DATABASE}}
+  NODE_ENV: test
+  PUBLIC_KEY: ${{secrets.PUBLIC_KEY}}
+  PRIVATE_KEY: ${{secrets.PRIVATE_KEY}}
+  JWT_ISSUER: "Team Turbo Hamster"
+  JWT_AUDIENCE: "Hamster Help"
+  CLOUDINARY_NAME: "dqqi7euap"
+  CLOUDINARY_API_KEY: "974767632566813"
+  CLOUDINARY_API_SECRET: "DG78PtKajN2o3SipvsMAX_lDaF4"
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - run: npm install
+      - run: npm run test-remote
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "hamster-help-socket-service" #Must be unique in Heroku
+          heroku_email: "mcwake-dev@outlook.com"

@@ -129,4 +129,5 @@ suite("Ticket Controller", () => {
       );
     });
   });
+  describe("");
 });
