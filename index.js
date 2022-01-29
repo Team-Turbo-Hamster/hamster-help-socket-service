@@ -1,4 +1,4 @@
-const PORT = 5000;
+const PORT = process.env.PORT;
 const server = require("http").createServer();
 const mongoose = require("mongoose");
 const log = require("./log");

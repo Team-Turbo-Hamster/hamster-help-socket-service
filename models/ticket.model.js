@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
+const { uploadImages } = require("../api/cloudinary");
 
 const ticketSchema = new mongoose.Schema({
   title: {
     type: String,
-    require: [true, "Please provide a title"],
+    required: [true, "Please provide a title"],
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -22,11 +23,9 @@ const ticketSchema = new mongoose.Schema({
     type: String,
     validate: [validator.isURL, "Please provide a valid link"],
   },
-  images: [
-    {
-      type: Object,
-    },
-  ],
+  images: {
+    type: [String],
+  },
   comments: [
     {
       type: new mongoose.Schema({
@@ -58,6 +57,17 @@ const ticketSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+});
+
+ticketSchema.pre("validate", function (next) {
+  const ticket = this;
+
+  if (!ticket.isModified("images")) return next();
+
+  uploadImages(this.images, "tickets").then((uploaded) => {
+    ticket.images = uploaded;
+    next();
+  });
 });
 
 const Ticket = mongoose.model("Ticket", ticketSchema);
