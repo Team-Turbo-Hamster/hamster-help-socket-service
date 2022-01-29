@@ -14,7 +14,7 @@ const sampleUser = require("../../db/data/test-data/users-tickets")[0];
 
 chai.use(require("chai-as-promised"));
 
-suite("User Controller", () => {
+suite("User Controller", function () {
   this.timeout(30000);
 
   before(async function () {
