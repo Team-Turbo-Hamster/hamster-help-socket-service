@@ -13,7 +13,7 @@ chai.use(require("chai-as-promised"));
 chai.use(require("chaid"));
 
 suite("Ticket Controller", function () {
-  this.timeout = 10000;
+  this.timeout(10000);
 
   before(async () => {
     await setup();
