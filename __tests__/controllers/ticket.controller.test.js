@@ -12,7 +12,9 @@ const mongoose = require("mongoose");
 chai.use(require("chai-as-promised"));
 chai.use(require("chaid"));
 
-suite("Ticket Controller", () => {
+suite("Ticket Controller", function () {
+  this.timeout = 10000;
+
   before(async () => {
     await setup();
   });
