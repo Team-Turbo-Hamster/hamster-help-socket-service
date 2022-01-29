@@ -8,6 +8,7 @@ const setup = async () => {
   });
   console.log("MongoDB Connected");
   await runSeed();
+  console.log("Seed Data Completed");
 };
 
 const teardown = async () => {
