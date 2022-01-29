@@ -15,13 +15,13 @@ const sampleUser = require("../../db/data/test-data/users-tickets")[0];
 chai.use(require("chai-as-promised"));
 
 suite("User Controller", () => {
+  this.timeout(30000);
+
   before(async function () {
-    this.timeout(30000);
     await setup();
   });
 
-  after(async () => {
-    this.timeout(30000);
+  after(async function () {
     await teardown();
   });
 
