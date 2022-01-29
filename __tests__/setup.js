@@ -6,6 +6,7 @@ const setup = async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
+  console.log("MongoDB Connected");
   await runSeed();
 };
 
