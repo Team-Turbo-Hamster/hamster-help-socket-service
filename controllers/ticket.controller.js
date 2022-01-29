@@ -60,12 +60,16 @@ const update = async ({
   return updatedTicket;
 };
 
-const addComment = async (id, user_id, comment) => {
-  const ticket = await Ticket.findOne({ id });
+const addComment = async ({ ticket_id, user_id, comment }) => {
+  const ticket = await Ticket.findOne({ id: ticket_id });
 
-  ticket.comments.push({ user: user_id, comment: comment });
+  if (ticket) {
+    ticket.comments.push({ ticket_id, user: user_id, comment });
 
-  ticket.save();
+    await ticket.save();
+  } else {
+    throw new Error("Invalid Ticket ID");
+  }
 };
 
 module.exports = { create, update, addComment };

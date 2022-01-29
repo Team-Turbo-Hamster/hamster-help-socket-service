@@ -18,6 +18,7 @@ const ticketSchema = new mongoose.Schema({
   },
   tags: {
     type: [String],
+    default: [],
   },
   zoomLink: {
     type: String,
@@ -25,6 +26,7 @@ const ticketSchema = new mongoose.Schema({
   },
   images: {
     type: [String],
+    default: [],
   },
   comments: [
     {
@@ -32,17 +34,18 @@ const ticketSchema = new mongoose.Schema({
         user: {
           type: mongoose.Schema.ObjectId,
           ref: "User",
-          require: [true, "Please provide a user ID"],
+          required: [true, "Please provide a user ID"],
         },
         comment: {
           type: String,
-          require: [true, "Please provide a comment"],
+          required: [true, "Please provide a comment"],
         },
         created_at: {
           type: Date,
           default: Date.now(),
         },
       }),
+      default: [],
     },
   ],
   created_at: {

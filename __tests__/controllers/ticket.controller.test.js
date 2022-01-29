@@ -2,7 +2,11 @@ const { suite, describe, it } = require("mocha");
 const chai = require("chai");
 const expect = chai.expect;
 
-const { create, update } = require("../../controllers/ticket.controller");
+const {
+  create,
+  update,
+  addComment,
+} = require("../../controllers/ticket.controller");
 const { setup, teardown } = require("../setup");
 const sampleUser = require("../../db/data/test-data/users-tickets")[0];
 const Ticket = require("../../models/ticket.model");
@@ -128,6 +132,85 @@ suite("Ticket Controller", function () {
 
       await expect(update(ticket)).to.be.rejectedWith(
         "Validation failed: body: Please provide a description"
+      );
+    });
+  });
+  describe("addComment", () => {
+    it("should add a comment to an existing ticket when called with valid data", async () => {
+      const dbUser = await User.findOne({ username: sampleUser.username });
+      const ticket_id = await create({
+        body: "Test Ticket Body",
+        title: "Test Ticket Title",
+        user: dbUser.id,
+        tags: ["Test Tag 1", "Test Tag 2"],
+        zoomLink: "http://fake.zoom.link/now",
+      });
+
+      await addComment({
+        ticket_id,
+        user_id: dbUser.id,
+        comment: "Test Comment",
+      });
+
+      const ticket = await Ticket.findOne({
+        id: ticket_id,
+      });
+
+      expect(ticket.comments.length).to.equal(1);
+      expect(ticket.comments[0].user.toString()).to.equal(
+        mongoose.Types.ObjectId(dbUser.id).toString()
+      );
+      expect(ticket.comments[0].comment).to.equal("Test Comment");
+      expect(ticket.comments[0].created_at).to.be.a("date");
+    });
+    it("should return an error if passed an invalid ticket ID", async () => {
+      const dbUser = await User.findOne({ username: sampleUser.username });
+
+      await expect(
+        addComment({
+          ticket_id: "averyfaketicketid",
+          user_id: dbUser.id,
+          comment: "Test Comment",
+        })
+      ).to.be.rejectedWith("Invalid Ticket ID");
+    });
+    it("should return an error if passed an invalid user ID", async () => {
+      const dbUser = await User.findOne({ username: sampleUser.username });
+      const ticket_id = await create({
+        body: "Test Ticket Body",
+        title: "Test Ticket Title",
+        user: dbUser.id,
+        tags: ["Test Tag 1", "Test Tag 2"],
+        zoomLink: "http://fake.zoom.link/now",
+      });
+
+      await expect(
+        addComment({
+          ticket_id,
+          user_id: "averyfakeuserid",
+          comment: "Test Comment",
+        })
+      ).to.be.rejectedWith(
+        'Ticket validation failed: comments.0.user: Cast to ObjectId failed for value "averyfakeuserid" (type string) at path "user"'
+      );
+    });
+    it("should return an error if not passed a comment", async () => {
+      const dbUser = await User.findOne({ username: sampleUser.username });
+      const ticket_id = await create({
+        body: "Test Ticket Body",
+        title: "Test Ticket Title",
+        user: dbUser.id,
+        tags: ["Test Tag 1", "Test Tag 2"],
+        zoomLink: "http://fake.zoom.link/now",
+      });
+
+      await expect(
+        addComment({
+          ticket_id,
+          user_id: dbUser.id,
+        })
+      ).to.be.rejectedWith(
+        "Ticket validation failed: comments.0.comment: Please provide a comment"
       );
     });
   });
