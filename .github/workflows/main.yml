@@ -18,9 +18,9 @@ env:
   PRIVATE_KEY: ${{secrets.PRIVATE_KEY}}
   JWT_ISSUER: "Team Turbo Hamster"
   JWT_AUDIENCE: "Hamster Help"
-  CLOUDINARY_NAME: "dqqi7euap"
-  CLOUDINARY_API_KEY: "974767632566813"
-  CLOUDINARY_API_SECRET: "DG78PtKajN2o3SipvsMAX_lDaF4"
+  CLOUDINARY_NAME: ${{secrets.CLOUDINARY_NAME}}
+  CLOUDINARY_API_KEY: ${{secrets.CLOUDINARY_API_KEY}}
+  CLOUDINARY_API_SECRET: ${{secrets.CLOUDINARY_API_SECRET}}
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
