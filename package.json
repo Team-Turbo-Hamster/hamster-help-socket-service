@@ -24,6 +24,7 @@
     "loglevel-plugin-prefix": "^0.8.4",
     "mongoose": "^6.1.8",
     "nodemon": "^2.0.15",
+    "socket-tester": "^1.2.1",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1",
     "validator": "^13.7.0"

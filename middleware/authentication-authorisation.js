@@ -20,12 +20,12 @@ const isRole = async (data, role, next) => {
   }
 };
 
-const isStudent = async (token, next) => {
-  await isRole(token, "Student", next);
+const isStudent = async (data, next) => {
+  await isRole(data, "Student", next);
 };
 
-const isTutor = async (token, next) => {
-  await isRole(token, "Tutor", next);
+const isTutor = async (data, next) => {
+  await isRole(data, "Tutor", next);
 };
 
 module.exports = { isAuthenticated, isStudent, isTutor };

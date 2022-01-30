@@ -1,8 +1,9 @@
 const jwt = require("../utils/jwt");
 const { validatePassword } = require("../utils/password");
 const User = require("../models/user.model");
+const log = require("../log");
 
-const authenticate = async (username, password) => {
+const authenticate = async ({ username, password }) => {
   const user = await User.findOne(
     { username },
     "username email +password avatar name role"
@@ -15,30 +16,12 @@ const authenticate = async (username, password) => {
       username
     );
 
+    log.info("Client authenticated");
     return token;
   }
 
+  log.warn("Client not authenticated");
   throw new Error("Invalid Credentials");
 };
 
-const reauthenticate = async (token) => {
-  try {
-    if (token) {
-      const decoded = jwt.decode(token);
-
-      if (
-        decoded &&
-        decoded.payload.username &&
-        jwt.verify(token, decoded.payload.username)
-      ) {
-        return true;
-      }
-    }
-
-    throw new Error("Invalid Token");
-  } catch (err) {
-    throw new Error("Invalid Token");
-  }
-};
-
-module.exports = { authenticate, reauthenticate };
+module.exports = { authenticate };
