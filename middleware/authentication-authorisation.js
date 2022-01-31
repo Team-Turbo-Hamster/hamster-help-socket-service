@@ -20,6 +20,23 @@ const isRole = async (data, role, next) => {
   }
 };
 
+const isOwnerOrTutor = async (data, next) => {
+  const { token } = data;
+  const decodedToken = await isValidToken(token);
+
+  if (decodedToken.role === "Tutor") {
+    next(data);
+  } else {
+    const ticket = Ticket.findOne({ id: ticket_id });
+
+    if (ticket.user === decodedToken.id) {
+      next(data);
+    } else {
+      throw new Error("Not authorised for this operation");
+    }
+  }
+};
+
 const isStudent = async (data, next) => {
   await isRole(data, "Student", next);
 };
@@ -28,4 +45,4 @@ const isTutor = async (data, next) => {
   await isRole(data, "Tutor", next);
 };
 
-module.exports = { isAuthenticated, isStudent, isTutor };
+module.exports = { isAuthenticated, isStudent, isTutor, isOwnerOrTutor };

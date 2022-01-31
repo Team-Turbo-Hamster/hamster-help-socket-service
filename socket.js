@@ -6,7 +6,11 @@ const {
   isTutor,
 } = require("./middleware/authentication-authorisation");
 const log = require("./log");
-const { create, addComment } = require("./controllers/ticket.controller");
+const {
+  create,
+  addComment,
+  update,
+} = require("./controllers/ticket.controller");
 
 const startSocketServer = (httpServer) => {
   const io = require("socket.io")(httpServer, {
@@ -56,9 +60,6 @@ const startSocketServer = (httpServer) => {
           client.join(ticket_id);
           client.emit("new-ticket", { ticket_id });
 
-          client.join(ticket_id);
-          client.emit("ticket-updated", { ticket_id });
-
           if (ticket.isPrivate) {
             io.to("Tutor").emit("new-ticket", { ticket_id });
           } else {
@@ -70,6 +71,29 @@ const startSocketServer = (httpServer) => {
         }
       })
     );
+
+    client.on("update-ticket", (data) => {
+      isAuthenticated(
+        data,
+        isOwnerOrTutor(data, async (data) => {
+          try {
+            const { ticket } = data;
+            const updatedTicket = await update(ticket);
+
+            client.emit("update-ticket", { ticket: updatedTicket });
+
+            if (updatedTicket.isPrivate) {
+              io.to("Tutor").emit("update-ticket", { ticket: updatedTicket });
+            } else {
+              io.to("Tutor").to("Student").emit("update-ticket", { ticket_id });
+            }
+          } catch (err) {
+            log.error(err);
+            client.emit("error", { err });
+          }
+        })
+      );
+    });
 
     client.on("watch-ticket", (data) => {
       isAuthenticated(data, async ({ ticket_id }) => {
