@@ -6,7 +6,7 @@ const {
   isTutor,
 } = require("./middleware/authentication-authorisation");
 const log = require("./log");
-const { create } = require("./controllers/ticket.controller");
+const { create, addComment } = require("./controllers/ticket.controller");
 
 const startSocketServer = (httpServer) => {
   const io = require("socket.io")(httpServer, {
@@ -51,18 +51,18 @@ const startSocketServer = (httpServer) => {
       isStudent(data, async (data) => {
         try {
           const { ticket: newTicket } = data;
-          const ticketId = await create(newTicket);
+          const ticket_id = await create(newTicket);
 
-          client.join(ticketId);
-          client.emit("new-ticket", { ticketId });
+          client.join(ticket_id);
+          client.emit("new-ticket", { ticket_id });
 
-          client.join(ticketId);
-          client.emit("ticket-updated", { ticketId });
+          client.join(ticket_id);
+          client.emit("ticket-updated", { ticket_id });
 
           if (ticket.isPrivate) {
-            io.to("Tutor").emit("new-ticket", { ticketId });
+            io.to("Tutor").emit("new-ticket", { ticket_id });
           } else {
-            io.to("Tutor").to("Student").emit("new-ticket", { ticketId });
+            io.to("Tutor").to("Student").emit("new-ticket", { ticket_id });
           }
         } catch (err) {
           log.error(err);
@@ -70,6 +70,29 @@ const startSocketServer = (httpServer) => {
         }
       })
     );
+
+    client.on("watch-ticket", (data) => {
+      isAuthenticated(data, async ({ ticket_id }) => {
+        client.join(ticket_id);
+      });
+    });
+
+    client.on("unwatch-ticket", (data) => {
+      isAuthenticated(data, async ({ ticket_id }) => {
+        client.leave(ticket_id);
+      });
+    });
+
+    client.on("new-comment", (data) => {
+      isAuthenticated(data, async ({ token, ticket_id, comment }) => {
+        const token = jwt.decode(token);
+        const user_id = token.id;
+
+        await addComment({ ticket_id, user_id, comment });
+
+        io.to(ticket_id).emit("new-comment", { ticket_id, user_id, comment });
+      });
+    });
 
     client.on("disconnect", () => {
       log.info("Client disconnected");
