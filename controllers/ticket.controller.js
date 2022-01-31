@@ -5,16 +5,17 @@ const create = async ({
   body,
   title,
   images,
-  user,
+  username,
   tags,
   zoomLink,
   isPrivate,
 }) => {
+  const user = await User.findOne({ username });
   const ticket = await Ticket.create({
     body,
     title,
     images,
-    user,
+    user: user.id,
     tags,
     zoomLink,
     isPrivate,
@@ -28,7 +29,7 @@ const create = async ({
     { new: true }
   );
 
-  return ticket.id;
+  return ticket;
 };
 
 const update = async ({

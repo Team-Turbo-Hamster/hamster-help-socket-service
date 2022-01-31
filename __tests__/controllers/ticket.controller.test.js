@@ -34,20 +34,17 @@ suite("Ticket Controller", function () {
   describe("create", () => {
     it("should create a new Ticket when passed valid data", async () => {
       const dbUser = await User.findOne({ username: sampleUser.username });
-      const ticketId = await create({
+      const ticket = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
         user: dbUser.id,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
-      const ticket = await Ticket.findOne({
-        id: mongoose.Types.ObjectId(ticketId),
-      });
       const updatedUser = await User.findOne({ username: sampleUser.username });
       const { user, created_at, resolved, isPrivate } = ticket;
 
-      expect(updatedUser.tickets).to.contain(ticketId);
+      expect(updatedUser.tickets).to.contain(ticket.id);
       expect(user.toString()).to.equal(dbUser.id);
       expect(created_at).to.be.a("date");
       expect(resolved).to.equal(false);
