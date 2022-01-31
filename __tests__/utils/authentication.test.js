@@ -11,7 +11,7 @@ const jwtLib = require("jsonwebtoken");
 chai.use(require("chai-as-promised"));
 chai.use(require("chaid"));
 
-suite("Authentication", function () {
+suite("Authentication Utility", function () {
   this.timeout(60000);
 
   before(async function () {
@@ -24,16 +24,26 @@ suite("Authentication", function () {
 
   describe("isValidToken", () => {
     it("should return a valid decoded token for a valid token", async () => {
-      const dbUser = await User.findOne({ username: sampleUser.username });
-      const token = await authenticate(
-        sampleUser.username,
-        sampleUser.password
-      );
-      const { id, username, name, avatar, role, email, aud, iss, sub } =
-        await isValidToken(token);
+      const { username, password } = sampleUser;
+      const dbUser = await User.findOne({ username });
+      const token = await authenticate({
+        username,
+        password,
+      });
+      const {
+        id,
+        username: tokenUsername,
+        name,
+        avatar,
+        role,
+        email,
+        aud,
+        iss,
+        sub,
+      } = await isValidToken(token);
 
       expect(id).to.equal(dbUser.id.toString());
-      expect(username).to.equal(dbUser.username);
+      expect(tokenUsername).to.equal(dbUser.username);
       expect(name).to.equal(dbUser.name);
       expect(avatar).to.equal(dbUser.avatar);
       expect(role).to.equal(dbUser.role);

@@ -5,7 +5,7 @@ const { encryptPassword, validatePassword } = require("../../utils/password");
 
 chai.use(require("chai-as-promised"));
 
-suite("Password", () => {
+suite("Password Utility", () => {
   describe("encryptPassword", () => {
     it("should return an encrypted password", async () => {
       const input = "password";

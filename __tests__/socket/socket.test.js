@@ -2,27 +2,30 @@ const { suite, describe, it } = require("mocha");
 const chai = require("chai");
 const expect = chai.expect;
 const { setup, teardown } = require("../setup");
-const Timeout = require("await-timeout");
 const httpServer = require("http").createServer();
 const io = require("socket.io-client");
 const jwt = require("../../utils/jwt");
 const tutor = {
   data: require("../../db/data/test-data/users-tickets")[0],
   client: null,
-  token: jwt.sign(this.data, this.data.username),
 };
+const tutorToken = jwt.sign(tutor.data, tutor.data.username);
+tutor.token = tutorToken;
+
 const student1 = {
   data: require("../../db/data/test-data/users-tickets")[1],
   client: null,
-  token: jwt.sign(this.data, this.data.username),
 };
+const student1token = jwt.sign(student1.data, student1.data.username);
+student1.token = student1token;
+
 const student2 = {
   data: require("../../db/data/test-data/users-tickets")[2],
   client: null,
-  token: jwt.sign(this.data, this.data.username),
 };
-const User = require("../../models/user.model");
-const { resolve } = require("path");
+const student2token = jwt.sign(student2.data, student2.data.username);
+student2.token = student2token;
+
 let socketServer;
 
 chai.use(require("chai-as-promised"));
@@ -32,13 +35,13 @@ chai.use(require("chai-spies"));
 suite("Socket", function () {
   this.timeout(60000);
 
-  before(async function () {
+  before(async () => {
     await setup();
     socketServer = require("../../socket")(httpServer);
     await httpServer.listen(process.env.PORT);
   });
 
-  beforeEach(async function () {
+  beforeEach(async () => {
     const ioOptions = {
       "reconnection delay": 0,
       "reopen delay": 0,
@@ -51,124 +54,143 @@ suite("Socket", function () {
     student2.client = io.connect(ioUrl, ioOptions);
   });
 
-  after(async function () {
+  after(async () => {
     await teardown();
     httpServer.close();
   });
 
-  afterEach(async function () {
+  afterEach(async () => {
     tutor.client.disconnect();
     student1.client.disconnect();
     student2.client.disconnect();
   });
 
-  describe("authenticate", () => {
-    it.only("should return a valid Tutor token and join the Tutor room when supplied with a valid username and password for a Tutor", async () => {
-      tutor.client.on("connect", () => {});
-    });
-    it("should return a valid Student token and join the Student room when supplied with a valid username and password for a Student", (done) => {
-      const studentClient = io.connect(`http://localhost:${process.env.PORT}`);
-      const errorSpy = chai.spy(() => done());
-      const { username, password } = sampleStudent;
-
-      studentClient.on("connect", (data) => {
-        studentClient.emit("authenticate", { username, password });
-      });
-
-      studentClient.on("error", errorSpy);
-      studentClient.on("authenticated", ({ token }) => {
-        expect(errorSpy).not.to.have.been.called();
-        expect(token).to.be.ok;
-        studentClient.disconnect();
-        done();
-      });
-    });
-    it("should return an error when supplied with a valid username and invalid password", (done) => {
-      const tutorClient = io.connect(`http://localhost:${process.env.PORT}`);
-      const authenticated = chai.spy(() => done());
-      const { username, password } = sampleTutor;
-
-      tutorClient.on("connect", (data) => {
-        tutorClient.emit("authenticate", {
-          username,
-          password: "verybadpassword",
+  describe("authenticate", function () {
+    this.timeout(5000);
+    it("should return a valid Tutor token and join the Tutor room when supplied with a valid username and password for a Tutor", async () => {
+      const { username, password } = tutor.data;
+      const error = new Promise((resolve, reject) => {
+        tutor.client.on("error", (error) => {
+          reject(error);
         });
       });
 
-      tutorClient.on("authenticated", authenticated);
-      tutorClient.on("error", (data) => {
-        expect(authenticated).not.to.have.been.called();
-        done();
-      });
-    });
-    it("should return an error when supplied with a valid username and no password", (done) => {
-      const tutorClient = io.connect(`http://localhost:${process.env.PORT}`);
-      const authenticated = chai.spy(() => done());
-      const { username, password } = sampleTutor;
-
-      tutorClient.on("connect", (data) => {
-        tutorClient.emit("authenticate", {
-          username,
+      const successfulLogin = new Promise((resolve, reject) => {
+        tutor.client.on("authenticated", ({ token }) => {
+          console.log("Authenticated");
+          jwt.verify(token);
+          socketServer.to("Tutor").emit("test-tutor-room");
+          resolve();
         });
       });
 
-      tutorClient.on("authenticated", authenticated);
-      tutorClient.on("error", (data) => {
-        expect(authenticated).not.to.have.been.called();
-        done();
-      });
-    });
-    it("should return an error when supplied with a invalid username and valid password", (done) => {
-      const tutorClient = io.connect(`http://localhost:${process.env.PORT}`);
-      const authenticated = chai.spy(() => done());
-      const { username, password } = sampleTutor;
-
-      tutorClient.on("connect", (data) => {
-        tutorClient.emit("authenticate", {
-          username: "invalidusername",
-          password,
+      const addedToRoom = new Promise((resolve, reject) => {
+        tutor.client.on("test-tutor-room", () => {
+          console.log("Added to Room");
+          resolve();
         });
       });
 
-      tutorClient.on("authenticated", authenticated);
-      tutorClient.on("error", (data) => {
-        expect(authenticated).not.to.have.been.called();
-        done();
-      });
-    });
-    it("should return an error when supplied with a no username and valid password", (done) => {
-      const tutorClient = io.connect(`http://localhost:${process.env.PORT}`);
-      const authenticated = chai.spy(() => done());
-      const { username, password } = sampleTutor;
+      tutor.client.emit("authenticate", { username, password });
 
-      tutorClient.on("connect", (data) => {
-        tutorClient.emit("authenticate", {
-          password,
+      await Promise.race([Promise.all([successfulLogin, addedToRoom]), error]);
+    });
+    it("should return a valid Student token and join the Student room when supplied with a valid username and password for a Student", async () => {
+      const { username, password } = student1.data;
+      const error = new Promise((resolve, reject) => {
+        student1.client.on("error", (error) => {
+          reject(error);
         });
       });
 
-      tutorClient.on("authenticated", authenticated);
-      tutorClient.on("error", (data) => {
-        expect(authenticated).not.to.have.been.called();
-        done();
-      });
-    });
-    it("should return an error if supplied with no username or password", (done) => {
-      const tutorClient = io.connect(`http://localhost:${process.env.PORT}`);
-      const authenticated = chai.spy(() => done());
-      const { username, password } = sampleTutor;
-
-      tutorClient.on("connect", (data) => {
-        tutorClient.emit("authenticate", {
-          username,
+      const successfulLogin = new Promise((resolve, reject) => {
+        student1.client.on("authenticated", ({ token }) => {
+          console.log("Authenticated");
+          jwt.verify(token);
+          socketServer.to("Student").emit("test-student-room");
+          resolve();
         });
       });
 
-      tutorClient.on("authenticated", authenticated);
-      tutorClient.on("error", (data) => {
-        expect(authenticated).not.to.have.been.called();
-        done();
+      const addedToRoom = new Promise((resolve, reject) => {
+        student1.client.on("test-student-room", () => {
+          console.log("Added to Room");
+          resolve();
+        });
       });
+
+      student1.client.emit("authenticate", { username, password });
+
+      await Promise.race([Promise.all([successfulLogin, addedToRoom]), error]);
+    });
+    it("should return an error when supplied with a valid username and invalid password", async () => {
+      const { username } = student1.data;
+      const error = new Promise((resolve, reject) => {
+        student1.client.on("error", (error) => {
+          resolve(error);
+        });
+      });
+
+      student1.client.emit("authenticate", {
+        username,
+        password: "averywrongpassword",
+      });
+
+      await error;
+    });
+    it("should return an error when supplied with a valid username and no password", async () => {
+      const { username } = student1.data;
+      const error = new Promise((resolve, reject) => {
+        student1.client.on("error", (error) => {
+          resolve(error);
+        });
+      });
+
+      student1.client.emit("authenticate", {
+        username,
+      });
+
+      await error;
+    });
+    it("should return an error when supplied with a invalid username and valid password", async () => {
+      const { password } = student1.data;
+      const error = new Promise((resolve, reject) => {
+        student1.client.on("error", (error) => {
+          resolve(error);
+        });
+      });
+
+      student1.client.emit("authenticate", {
+        username: "averywrongusername",
+        password,
+      });
+
+      await error;
+    });
+    it("should return an error when supplied with a no username and valid password", async () => {
+      const { password } = student1.data;
+      const error = new Promise((resolve, reject) => {
+        student1.client.on("error", (error) => {
+          resolve(error);
+        });
+      });
+
+      student1.client.emit("authenticate", {
+        password,
+      });
+
+      await error;
+    });
+    it("should return an error if supplied with no username or password", async () => {
+      const error = new Promise((resolve, reject) => {
+        student1.client.on("error", (error) => {
+          resolve(error);
+        });
+      });
+
+      student1.client.emit("authenticate", {});
+
+      await error;
     });
   });
 });

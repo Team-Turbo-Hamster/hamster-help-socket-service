@@ -25,9 +25,9 @@ const startSocketServer = (httpServer) => {
     client.on("authenticate", async ({ username, password }) => {
       try {
         const token = await authenticate({ username, password });
-        const { role } = await jwt.decode(token);
+        const { role } = await jwt.decode(token).payload;
         log.info("Client authenticated");
-        client.join(role);
+        await client.join(role);
         client.emit("authenticated", { token });
       } catch (error) {
         log.warn(error);
@@ -109,8 +109,8 @@ const startSocketServer = (httpServer) => {
 
     client.on("new-comment", (data) => {
       isAuthenticated(data, async ({ token, ticket_id, comment }) => {
-        const token = jwt.decode(token);
-        const user_id = token.id;
+        const decoded = jwt.decode(token);
+        const user_id = decoded.id;
 
         await addComment({ ticket_id, user_id, comment });
 

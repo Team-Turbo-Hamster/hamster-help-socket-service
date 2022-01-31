@@ -17,7 +17,7 @@ chai.use(require("chai-as-promised"));
 chai.use(require("chaid"));
 chai.use(require("chai-spies"));
 
-suite("Authorization", function () {
+suite("Authorisation", function () {
   this.timeout(60000);
 
   before(async function () {
@@ -30,10 +30,8 @@ suite("Authorization", function () {
 
   describe("isAuthenticated", () => {
     it("should call the passed function when called with a valid token", async () => {
-      const token = await authenticate(
-        sampleTutor.username,
-        sampleTutor.password
-      );
+      const { username, password } = sampleTutor;
+      const token = await authenticate({ username, password });
       const spy = chai.spy((data) => {
         return `Called with ${data}`;
       });
@@ -79,10 +77,8 @@ suite("Authorization", function () {
   });
   describe("isStudent", () => {
     it("should call the supplied function when supplied with a valid student token", async () => {
-      const token = await authenticate(
-        sampleStudent.username,
-        sampleStudent.password
-      );
+      const { username, password } = sampleStudent;
+      const token = await authenticate({ username, password });
       const spy = chai.spy((data) => {
         return `Called with ${data}`;
       });
@@ -92,10 +88,8 @@ suite("Authorization", function () {
       expect(spy).to.have.been.called();
     });
     it("should not call the supplied function when supplied with a non-student token", async () => {
-      const token = await authenticate(
-        sampleTutor.username,
-        sampleTutor.password
-      );
+      const { username, password } = sampleTutor;
+      const token = await authenticate({ username, password });
       const spy = chai.spy((data) => {
         return `Called with ${data}`;
       });
@@ -108,7 +102,7 @@ suite("Authorization", function () {
     });
     it("should not call the supplied function when supplied with an expired token", async () => {
       const expiredToken = jwtLib.sign(
-        { username: sampleTutor.username, role: "Student" },
+        { username: sampleStudent.username, role: "Student" },
         process.env.PRIVATE_KEY,
         {
           issuer: process.env.JWT_ISSUER,
@@ -116,7 +110,7 @@ suite("Authorization", function () {
           expiresIn: "1s",
           algorithm: "RS256",
         },
-        sampleTutor.username
+        sampleStudent.username
       );
 
       await Timeout.set(1000);
@@ -133,10 +127,8 @@ suite("Authorization", function () {
   });
   describe("isTutor", () => {
     it("should call the supplied function when supplied with a valid tutor token", async () => {
-      const token = await authenticate(
-        sampleTutor.username,
-        sampleTutor.password
-      );
+      const { username, password } = sampleTutor;
+      const token = await authenticate({ username, password });
       const spy = chai.spy((data) => {
         return `Called with ${data}`;
       });
@@ -146,10 +138,11 @@ suite("Authorization", function () {
       expect(spy).to.have.been.called();
     });
     it("should not call the supplied function when supplied with a non-tutor token", async () => {
-      const token = await authenticate(
-        sampleStudent.username,
-        sampleStudent.password
-      );
+      const { username, password } = sampleStudent;
+      const token = await authenticate({
+        username,
+        password,
+      });
       const spy = chai.spy((data) => {
         return `Called with ${data}`;
       });

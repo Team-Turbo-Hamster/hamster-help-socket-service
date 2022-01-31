@@ -25,38 +25,40 @@ suite("User Controller", function () {
   describe("authenticate", () => {
     it("should return a valid JWT for a valid username and password", async () => {
       const { username, password } = sampleUser;
-      const token = await authenticate(username, password);
+      const token = await authenticate({ username, password });
+      const decoded = jwt.verify(token, username);
 
-      expect(jwt.verify(token, username)).to.be.ok;
+      expect(decoded).to.be.ok;
     });
     it("should return an error if password is incorrect", async () => {
       const { username } = sampleUser;
-      await expect(authenticate(username, "wrongpassword")).to.be.rejectedWith(
-        "Invalid Credentials"
-      );
+      await expect(
+        authenticate({ username }, "wrongpassword")
+      ).to.be.rejectedWith("Invalid Credentials");
     });
     it("should return an error if username is incorrect", async () => {
       const { password } = sampleUser;
-      await expect(authenticate("wrongusername", password)).to.be.rejectedWith(
-        "Invalid Credentials"
-      );
+      await expect(
+        authenticate("wrongusername", {
+          username: "averywrongusername",
+          password,
+        })
+      ).to.be.rejectedWith("Invalid Credentials");
     });
     it("should return an error if username is not supplied", async () => {
       const { password } = sampleUser;
-      await expect(authenticate(null, password)).to.be.rejectedWith(
+      await expect(authenticate({ password })).to.be.rejectedWith(
         "Invalid Credentials"
       );
     });
     it("should return an error if password is not supplied", async () => {
       const { username } = sampleUser;
-      await expect(authenticate(username, null)).to.be.rejectedWith(
+      await expect(authenticate({ username })).to.be.rejectedWith(
         "Invalid Credentials"
       );
     });
     it("should return an error if username and password is not supplied", async () => {
-      await expect(authenticate(null, null)).to.be.rejectedWith(
-        "Invalid Credentials"
-      );
+      await expect(authenticate({})).to.be.rejectedWith("Invalid Credentials");
     });
   });
 });
