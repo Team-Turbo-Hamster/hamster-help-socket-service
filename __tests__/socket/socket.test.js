@@ -66,7 +66,7 @@ suite("Socket", function () {
   });
 
   describe("authenticate", function () {
-    this.timeout(5000);
+    this.timeout(10000);
     it("should return a valid Tutor token and join the Tutor room when supplied with a valid username and password for a Tutor", async () => {
       const { username, password } = tutor.data;
       const error = new Promise((resolve, reject) => {
