@@ -203,7 +203,7 @@ suite("Socket", function () {
     });
   });
   describe("create-ticket", () => {
-    it.only("should return a new ticket and enrol the student in the room for the ticket, and notify all users of a new public ticket", async () => {
+    it("should return a new ticket and enrol the student in the room for the ticket, and notify all users of a new public ticket", async () => {
       const error = new Promise((resolve, reject) => {
         student1.client.on("error", (error) => {
           console.log(error);

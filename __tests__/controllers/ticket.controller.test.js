@@ -8,7 +8,7 @@ const {
   addComment,
 } = require("../../controllers/ticket.controller");
 const { setup, teardown } = require("../setup");
-const sampleUser = require("../../db/data/test-data/users-tickets")[0];
+const sampleUser = require("../../db/data/test-data/users-tickets")[1];
 const Ticket = require("../../models/ticket.model");
 const User = require("../../models/user.model");
 const mongoose = require("mongoose");
@@ -37,7 +37,7 @@ suite("Ticket Controller", function () {
       const ticket = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
-        user: dbUser.id,
+        username: sampleUser.username,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
@@ -56,7 +56,7 @@ suite("Ticket Controller", function () {
         create({
           title: "Test Ticket Title",
           images: [],
-          user: dbUser.id,
+          username: sampleUser.username,
           tags: ["Test Tag 1", "Test Tag 2"],
           zoomLink: "http://fake.zoom.link/now",
         })
@@ -70,7 +70,7 @@ suite("Ticket Controller", function () {
         create({
           body: "Test Ticket Body",
           images: [],
-          user: dbUser.id,
+          username: sampleUser.username,
           tags: ["Test Tag 1", "Test Tag 2"],
           zoomLink: "http://fake.zoom.link/now",
         })
@@ -98,7 +98,7 @@ suite("Ticket Controller", function () {
       const ticketId = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
-        user: dbUser.id,
+        username: sampleUser.username,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
@@ -117,7 +117,7 @@ suite("Ticket Controller", function () {
       const ticketId = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
-        user: dbUser.id,
+        username: sampleUser.username,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
@@ -138,14 +138,14 @@ suite("Ticket Controller", function () {
       const ticket_id = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
-        user: dbUser.id,
+        username: sampleUser.username,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
 
       await addComment({
         ticket_id,
-        user_id: dbUser.id,
+        username: sampleUser.username,
         comment: "Test Comment",
       });
 
@@ -169,14 +169,14 @@ suite("Ticket Controller", function () {
           user_id: dbUser.id,
           comment: "Test Comment",
         })
-      ).to.be.rejectedWith("Invalid Ticket ID");
+      ).to.be.rejectedWith("Invalid Ticket Comment Details");
     });
     it("should return an error if passed an invalid user ID", async () => {
       const dbUser = await User.findOne({ username: sampleUser.username });
       const ticket_id = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
-        user: dbUser.id,
+        username: sampleUser.username,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
@@ -184,19 +184,17 @@ suite("Ticket Controller", function () {
       await expect(
         addComment({
           ticket_id,
-          user_id: "averyfakeuserid",
+          username: "averyfakeuserid",
           comment: "Test Comment",
         })
-      ).to.be.rejectedWith(
-        'Ticket validation failed: comments.0.user: Cast to ObjectId failed for value "averyfakeuserid" (type string) at path "user"'
-      );
+      ).to.be.rejectedWith("Invalid Ticket Comment Details");
     });
     it("should return an error if not passed a comment", async () => {
       const dbUser = await User.findOne({ username: sampleUser.username });
       const ticket_id = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
-        user: dbUser.id,
+        username: sampleUser.username,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
@@ -206,9 +204,7 @@ suite("Ticket Controller", function () {
           ticket_id,
           user_id: dbUser.id,
         })
-      ).to.be.rejectedWith(
-        "Ticket validation failed: comments.0.comment: Please provide a comment"
-      );
+      ).to.be.rejectedWith("Invalid Ticket Comment Details");
     });
   });
 });

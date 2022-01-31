@@ -1,3 +1,4 @@
+const log = require("loglevel");
 const Ticket = require("../models/ticket.model");
 const User = require("../models/user.model");
 
@@ -11,25 +12,34 @@ const create = async ({
   isPrivate,
 }) => {
   const user = await User.findOne({ username });
-  const ticket = await Ticket.create({
-    body,
-    title,
-    images,
-    user: user.id,
-    tags,
-    zoomLink,
-    isPrivate,
-  });
 
-  await User.findByIdAndUpdate(
-    user,
-    {
-      $push: { tickets: ticket.id },
-    },
-    { new: true }
-  );
+  log.info(`New ticket for user ${username}`);
+  if (user) {
+    const ticket = await Ticket.create({
+      body,
+      title,
+      images,
+      user: user.id,
+      tags,
+      zoomLink,
+      isPrivate,
+    });
 
-  return ticket;
+    await User.findByIdAndUpdate(
+      user,
+      {
+        $push: { tickets: ticket.id },
+      },
+      { new: true }
+    );
+
+    return ticket;
+  } else {
+    log.warn("Cannot find user to create Ticket");
+    throw new Error(
+      "Ticket validation failed: user: Ticket must belong to a user"
+    );
+  }
 };
 
 const update = async ({
@@ -61,15 +71,16 @@ const update = async ({
   return updatedTicket;
 };
 
-const addComment = async ({ ticket_id, user_id, comment }) => {
+const addComment = async ({ ticket_id, username, comment }) => {
   const ticket = await Ticket.findOne({ id: ticket_id });
+  const user = await User.findOne({ username });
 
-  if (ticket) {
-    ticket.comments.push({ ticket_id, user: user_id, comment });
+  if (ticket && user) {
+    ticket.comments.push({ ticket_id, user: user.id, comment });
 
     await ticket.save();
   } else {
-    throw new Error("Invalid Ticket ID");
+    throw new Error("Invalid Ticket Comment Details");
   }
 };
 
