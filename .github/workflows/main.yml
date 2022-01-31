@@ -21,6 +21,8 @@ env:
   CLOUDINARY_NAME: ${{secrets.CLOUDINARY_NAME}}
   CLOUDINARY_API_KEY: ${{secrets.CLOUDINARY_API_KEY}}
   CLOUDINARY_API_SECRET: ${{secrets.CLOUDINARY_API_SECRET}}
+  PORT: ${{secrets.PORT}}
+  CLIENT_URL: ${{secrets.CLIENT_URL}}
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
