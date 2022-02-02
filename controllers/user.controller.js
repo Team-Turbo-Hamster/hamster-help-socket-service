@@ -11,9 +11,13 @@ const authenticate = async ({ username, password }) => {
 
   console.log(user);
   if (user && password && (await validatePassword(password, user.password))) {
+    const { id, name, username, email, created_at, avatar, role } = user;
+
     log.info(`Password validated`);
-    delete user.password;
-    const token = jwt.sign(user, username);
+    const token = jwt.sign(
+      { id, name, username, email, created_at, avatar, role },
+      user.username
+    );
 
     log.info("Client authenticated");
     return token;
