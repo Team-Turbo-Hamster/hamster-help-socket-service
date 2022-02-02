@@ -14,7 +14,15 @@ const {
 const startSocketServer = (httpServer) => {
   const io = require("socket.io")(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origins: ["*"],
+    },
+
+    handlePreflightRequests: (req, res) => {
+      res.writeHead(200, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST",
+        "Access-Control-Allow-Credentials": true,
+      });
     },
   });
 
