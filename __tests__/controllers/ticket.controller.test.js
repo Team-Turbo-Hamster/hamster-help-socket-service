@@ -138,14 +138,14 @@ suite("Ticket Controller", function () {
       const ticket_id = await create({
         body: "Test Ticket Body",
         title: "Test Ticket Title",
-        username: sampleUser.username,
+        username: dbUser.username,
         tags: ["Test Tag 1", "Test Tag 2"],
         zoomLink: "http://fake.zoom.link/now",
       });
 
       await addComment({
         ticket_id,
-        username: sampleUser.username,
+        user_id: dbUser.id,
         comment: "Test Comment",
       });
 
@@ -157,7 +157,7 @@ suite("Ticket Controller", function () {
       expect(ticket.comments[0].user.toString()).to.equal(
         mongoose.Types.ObjectId(dbUser.id).toString()
       );
-      expect(ticket.comments[0].comment).to.equal("Test Comment");
+      expect(ticket.comments[0].body).to.equal("Test Comment");
       expect(ticket.comments[0].created_at).to.be.a("date");
     });
     it("should return an error if passed an invalid ticket ID", async () => {
@@ -169,42 +169,9 @@ suite("Ticket Controller", function () {
           user_id: dbUser.id,
           comment: "Test Comment",
         })
-      ).to.be.rejectedWith("Invalid Ticket Comment Details");
-    });
-    it("should return an error if passed an invalid user ID", async () => {
-      const dbUser = await User.findOne({ username: sampleUser.username });
-      const ticket_id = await create({
-        body: "Test Ticket Body",
-        title: "Test Ticket Title",
-        username: sampleUser.username,
-        tags: ["Test Tag 1", "Test Tag 2"],
-        zoomLink: "http://fake.zoom.link/now",
+      ).to.be.rejected.then((error) => {
+        console.log(error);
       });
-
-      await expect(
-        addComment({
-          ticket_id,
-          username: "averyfakeuserid",
-          comment: "Test Comment",
-        })
-      ).to.be.rejectedWith("Invalid Ticket Comment Details");
-    });
-    it("should return an error if not passed a comment", async () => {
-      const dbUser = await User.findOne({ username: sampleUser.username });
-      const ticket_id = await create({
-        body: "Test Ticket Body",
-        title: "Test Ticket Title",
-        username: sampleUser.username,
-        tags: ["Test Tag 1", "Test Tag 2"],
-        zoomLink: "http://fake.zoom.link/now",
-      });
-
-      await expect(
-        addComment({
-          ticket_id,
-          user_id: dbUser.id,
-        })
-      ).to.be.rejectedWith("Invalid Ticket Comment Details");
     });
   });
 });

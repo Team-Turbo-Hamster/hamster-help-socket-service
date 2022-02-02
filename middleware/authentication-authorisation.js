@@ -4,9 +4,11 @@ const jwt = require("../utils/jwt");
 const isAuthenticated = (data, next) => {
   const { token } = data;
 
+  console.log(token);
   if (token) {
     const decoded = jwt.decode(token);
 
+    console.log(decoded);
     if (decoded) {
       const verifiedToken = jwt.verify(token, decoded.payload.username);
 

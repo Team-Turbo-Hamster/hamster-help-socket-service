@@ -72,27 +72,21 @@ const update = async ({
 };
 
 const addComment = async ({ ticket_id, user_id, comment }) => {
-  const user = await User.findOne({ user: user_id });
+  const updatedTicket = await Ticket.findByIdAndUpdate(
+    ticket_id,
+    {
+      $push: { comments: { body: comment, user: user_id } },
+    },
+    { new: true }
+  ).populate({
+    path: "comments",
+    populate: {
+      path: "user",
+      model: "User",
+    },
+  });
 
-  if (user) {
-    const updatedTicket = await Ticket.findByIdAndUpdate(
-      ticket_id,
-      {
-        $push: { comments: { body: comment, user: user_id } },
-      },
-      { new: true }
-    ).populate({
-      path: "comments",
-      populate: {
-        path: "user",
-        model: "User",
-      },
-    });
-
-    return { updatedTicket, user };
-  } else {
-    throw new Error("Invalid Ticket Comment Details");
-  }
+  return updatedTicket;
 };
 
 module.exports = { create, update, addComment };
