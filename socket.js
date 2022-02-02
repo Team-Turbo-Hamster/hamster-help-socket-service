@@ -11,7 +11,6 @@ const {
   addComment,
   update,
 } = require("./controllers/ticket.controller");
-const clients = [];
 const startSocketServer = (httpServer) => {
   const io = require("socket.io")(httpServer, {
     cors: {
@@ -36,7 +35,7 @@ const startSocketServer = (httpServer) => {
       const logger = log.getLogger("authenticate");
       try {
         const token = await authenticate({ username, password });
-        const { role } = await jwt.decode(token).payload;
+        const { role } = jwt.decode(token).payload;
         log.info("Client authenticated");
         await client.join(role);
         client.emit("authenticated", { token });
@@ -47,14 +46,16 @@ const startSocketServer = (httpServer) => {
     });
 
     client.on("reauthenticate", (data) => {
+      const logger = log.getLogger("reauthenticate");
       try {
-        isAuthenticated(data, async (data) => {
+        isAuthenticated(data, (data) => {
+          logger.info("User authenticated");
           try {
             const { token } = data;
-            const { role } = await jwt.decode(token);
+            const { role } = jwt.decode(token).payload;
 
-            log.info("Client re-authenticated");
-            await client.join(role);
+            log.info(`Client with role ${role} re-authenticated`);
+            client.join(role);
             client.emit("reauthenticated");
           } catch (error) {
             client.emit("error", error);
@@ -74,25 +75,31 @@ const startSocketServer = (httpServer) => {
 
           const { ticket: newTicket, verifiedToken } = data;
           const { username } = verifiedToken;
+
           create({ ...newTicket, username })
             .then((ticket) => {
               client.join(ticket.id);
 
               log.info("Ticket Created, sending...");
-              client.emit("new-ticket", { ticket });
-              io.emit("new-ticket", { ticket });
+
+              if (ticket.isPrivate) {
+                log.info("Ticket is private");
+                io.of("/")
+                  .to(client.id)
+                  .to("Tutor")
+                  .emit("new-ticket", { ticket });
+              } else {
+                io.of("/")
+                  .to(client.id)
+                  .to("Tutor")
+                  .to("Student")
+                  .emit("new-ticket", { ticket });
+              }
             })
             .catch((error) => {
               log.error(error);
               client.emit("error", { error });
             });
-
-          // if (ticket.isPrivate) {
-          //   log.info("Ticket is private");
-          //   io.to(client.id).to("Tutor").emit("new-ticket", { ticket });
-          // } else {
-          //   io.to("Tutor").to("Student").emit("new-ticket", { ticket });
-          // }
         });
       } catch (error) {
         log.error(error);
@@ -128,8 +135,8 @@ const startSocketServer = (httpServer) => {
       log.info("Watching ticket...");
       isAuthenticated(data, async ({ ticket_id }) => {
         log.info("Watching ticket");
-        await client.join(ticket_id);
-        client.emit("ticket-watched", { ticket_id });
+        client.join(ticket_id);
+        io.of("/").to(ticket_id).emit("ticket-watched", { ticket_id });
       });
     });
 
@@ -142,13 +149,16 @@ const startSocketServer = (httpServer) => {
 
     client.on("new-comment", (data) => {
       log.info("Adding comment...");
-      isAuthenticated(data, async ({ token, ticket_id, comment }) => {
-        const decoded = jwt.decode(token);
-        const user_id = decoded.id;
+      isAuthenticated(data, async ({ verifiedToken, ticket_id, comment }) => {
+        const user_id = verifiedToken._id;
 
-        await addComment({ ticket_id, user_id, comment });
+        const { updatedTicket, user } = await addComment({
+          ticket_id,
+          user_id,
+          comment,
+        });
 
-        io.to(ticket_id).emit("new-comment", { ticket_id, user_id, comment });
+        io.of("/").to(ticket_id).emit("new-comment", { updatedTicket, user });
       });
     });
 

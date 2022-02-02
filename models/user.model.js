@@ -28,7 +28,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Please insert a password"],
       select: false,
     },
     created_at: {
@@ -51,7 +50,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre("validate", function (next) {
+userSchema.pre("save", function (next) {
   const user = this;
 
   if (!user.isModified("password")) return next();
@@ -62,10 +61,19 @@ userSchema.pre("validate", function (next) {
       next();
     })
     .catch((err) => {
-      console.log(err);
       next(err);
     });
 });
+
+// userSchema.pre(/^find/, function (next) {
+//   this.populate({
+//     path: "tickets",
+//     match: { resolved: false },
+//     select: "title body tags zoomLink image created_at resolved",
+//   });
+
+//   next();
+// });
 
 const User = mongoose.model("User", userSchema);
 

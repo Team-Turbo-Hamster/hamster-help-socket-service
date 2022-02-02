@@ -71,14 +71,25 @@ const update = async ({
   return updatedTicket;
 };
 
-const addComment = async ({ ticket_id, username, comment }) => {
-  const ticket = await Ticket.findOne({ id: ticket_id });
-  const user = await User.findOne({ username });
+const addComment = async ({ ticket_id, user_id, comment }) => {
+  const user = await User.findOne({ user: user_id });
 
-  if (ticket && user) {
-    ticket.comments.push({ ticket_id, user: user.id, comment });
+  if (user) {
+    const updatedTicket = await Ticket.findByIdAndUpdate(
+      ticket_id,
+      {
+        $push: { comments: { body: comment, user: user_id } },
+      },
+      { new: true }
+    ).populate({
+      path: "comments",
+      populate: {
+        path: "user",
+        model: "User",
+      },
+    });
 
-    await ticket.save();
+    return { updatedTicket, user };
   } else {
     throw new Error("Invalid Ticket Comment Details");
   }

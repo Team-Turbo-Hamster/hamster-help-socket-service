@@ -3,13 +3,17 @@ const jwt = require("../utils/jwt");
 
 const isAuthenticated = (data, next) => {
   const { token } = data;
-  const decoded = jwt.decode(token);
-  const verifiedToken = jwt.verify(token, decoded.payload.username);
 
-  if (verifiedToken) {
-    next({ ...data, verifiedToken });
-  } else {
-    throw new Error(`Not Authenticated`);
+  if (token) {
+    const decoded = jwt.decode(token);
+
+    if (decoded) {
+      const verifiedToken = jwt.verify(token, decoded.payload.username);
+
+      if (verifiedToken) {
+        next({ ...data, verifiedToken });
+      }
+    }
   }
 };
 
