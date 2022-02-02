@@ -4,6 +4,7 @@
   "description": "",
   "main": "sio-client.js",
   "scripts": {
+    "start": "export NODE_ENV=production && nodemon index.js",
     "start-dev": "export NODE_ENV=development && nodemon -r ./environment/development.js index.js",
     "test-remote": "export NODE_ENV=test && mocha --bail --recursive __tests__/*",
     "test-dev": "export NODE_ENV=test && mocha -r environment/test.js --bail --recursive __tests__/*"
