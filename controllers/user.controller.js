@@ -4,10 +4,7 @@ const User = require("../models/user.model");
 const log = require("../log");
 
 const authenticate = async ({ username, password }) => {
-  const user = await User.findOne(
-    { username },
-    "username email +password avatar name role"
-  );
+  const user = await User.findOne({ username }, "+password");
 
   if (user && password && (await validatePassword(password, user.password))) {
     const { username, name, avatar, role, email, id } = user;

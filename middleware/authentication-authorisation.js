@@ -1,48 +1,55 @@
-const isValidToken = require("../utils/authentication");
+const log = require("loglevel");
+const jwt = require("../utils/jwt");
 
-const isAuthenticated = async (data, next) => {
+const isAuthenticated = (data, next) => {
   const { token } = data;
-  const verifiedToken = await isValidToken(token);
+  const decoded = jwt.decode(token);
+  const verifiedToken = jwt.verify(token, decoded.payload.username);
 
   if (verifiedToken) {
-    next(data);
+    next({ ...data, verifiedToken });
+  } else {
+    throw new Error(`Not Authenticated`);
   }
 };
 
-const isRole = async (data, role, next) => {
-  const { token } = data;
-  const decodedToken = await isValidToken(token);
+const isRole = (data, role, next) => {
+  const { verifiedToken } = data;
 
-  if (decodedToken.role === role) {
+  if (verifiedToken && verifiedToken.role === role) {
+    log.info(`User is a ${role}`);
     next(data);
   } else {
+    log.warn(`User is not a ${role}`);
     throw new Error(`Not a ${role}`);
   }
 };
 
-const isOwnerOrTutor = async (data, next) => {
-  const { token } = data;
-  const decodedToken = await isValidToken(token);
+const isOwnerOrTutor = (data, next) =>
+  isAuthenticated(data, (data) => {
+    const { verifiedToken } = data;
 
-  if (decodedToken.role === "Tutor") {
-    next(data);
-  } else {
-    const ticket = Ticket.findOne({ id: ticket_id });
-
-    if (ticket.user === decodedToken.id) {
+    if (verifiedToken && verifiedToken.role === "Tutor") {
       next(data);
     } else {
-      throw new Error("Not authorised for this operation");
+      const ticket = Ticket.findOne({ id: ticket_id });
+
+      if (ticket.user === decodedToken.id) {
+        next(data);
+      } else {
+        throw new Error("Not authorised for this operation");
+      }
     }
-  }
-};
+  });
 
-const isStudent = async (data, next) => {
-  await isRole(data, "Student", next);
-};
+const isStudent = (data, next) =>
+  isAuthenticated(data, (data) => {
+    isRole(data, "Student", next);
+  });
 
-const isTutor = async (data, next) => {
-  await isRole(data, "Tutor", next);
-};
+const isTutor = (data, next) =>
+  isAuthenticated(data, (data) => {
+    isRole(data, "Tutor", next);
+  });
 
 module.exports = { isAuthenticated, isStudent, isTutor, isOwnerOrTutor };

@@ -11,7 +11,7 @@ const {
   addComment,
   update,
 } = require("./controllers/ticket.controller");
-
+const clients = [];
 const startSocketServer = (httpServer) => {
   const io = require("socket.io")(httpServer, {
     cors: {
@@ -20,9 +20,20 @@ const startSocketServer = (httpServer) => {
   });
 
   io.on("connection", (client) => {
-    log.info("Client connected");
+    log.info(`Client connected - Active Clients: ${io.engine.clientsCount}`);
+
+    if (process.env.NODE_ENV === "development") {
+      client.use((packet, next) => {
+        const logger = log.getLogger(packet[0]);
+
+        logger.info("Received message");
+        logger.info(packet[1]);
+        next();
+      });
+    }
 
     client.on("authenticate", async ({ username, password }) => {
+      const logger = log.getLogger("authenticate");
       try {
         const token = await authenticate({ username, password });
         const { role } = await jwt.decode(token).payload;
@@ -31,56 +42,70 @@ const startSocketServer = (httpServer) => {
         client.emit("authenticated", { token });
       } catch (error) {
         log.warn(error);
-        client.emit("error", error);
+        client.emit("error", { error: error.message });
       }
     });
 
-    client.on("reauthenticate", (data) =>
-      isAuthenticated(data, async (data) => {
-        try {
-          const { token } = data;
-          const { role } = await jwt.decode(token);
+    client.on("reauthenticate", (data) => {
+      try {
+        isAuthenticated(data, async (data) => {
+          try {
+            const { token } = data;
+            const { role } = await jwt.decode(token);
 
-          log.info("Client re-authenticated");
-          await client.join(role);
-          client.emit("reauthenticated");
-        } catch (err) {
-          log.error(err);
-          client.emit("error", { err });
-        }
-      })
-    );
-
-    client.on("create-ticket", (data) =>
-      isStudent(data, async (data) => {
-        log.info("Attempting ticket creation...");
-        try {
-          const { ticket: newTicket, token } = data;
-          const { username } = jwt.decode(token).payload;
-          const ticket = await create({ ...newTicket, username });
-
-          await client.join(ticket.id);
-
-          if (ticket.isPrivate) {
-            io.to(ticket.id).to("Tutor").emit("new-ticket", { ticket });
-          } else {
-            io.to(ticket.id)
-              .to("Tutor")
-              .to("Student")
-              .emit("new-ticket", { ticket });
+            log.info("Client re-authenticated");
+            await client.join(role);
+            client.emit("reauthenticated");
+          } catch (error) {
+            client.emit("error", error);
           }
-        } catch (err) {
-          log.error(err);
-          client.emit("error", { err });
-        }
-      })
-    );
+        });
+      } catch (err) {
+        log.error(err);
+        client.emit("error", { err });
+      }
+    });
+
+    client.on("create-ticket", (data) => {
+      log.info("Verifying student...");
+      try {
+        isStudent(data, (data) => {
+          log.info("Attempting ticket creation...");
+
+          const { ticket: newTicket, verifiedToken } = data;
+          const { username } = verifiedToken;
+          create({ ...newTicket, username })
+            .then((ticket) => {
+              client.join(ticket.id);
+
+              log.info("Ticket Created, sending...");
+              client.emit("new-ticket", { ticket });
+              io.emit("new-ticket", { ticket });
+            })
+            .catch((error) => {
+              log.error(error);
+              client.emit("error", { error });
+            });
+
+          // if (ticket.isPrivate) {
+          //   log.info("Ticket is private");
+          //   io.to(client.id).to("Tutor").emit("new-ticket", { ticket });
+          // } else {
+          //   io.to("Tutor").to("Student").emit("new-ticket", { ticket });
+          // }
+        });
+      } catch (error) {
+        log.error(error);
+        client.emit("error", { error });
+      }
+    });
 
     client.on("update-ticket", (data) => {
-      isAuthenticated(
-        data,
-        isOwnerOrTutor(data, async (data) => {
-          try {
+      try {
+        log.info("Attempting ticket update...");
+        isAuthenticated(
+          data,
+          isOwnerOrTutor(data, async (data) => {
             const { ticket } = data;
             const updatedTicket = await update(ticket);
 
@@ -91,15 +116,16 @@ const startSocketServer = (httpServer) => {
             } else {
               io.to("Tutor").to("Student").emit("update-ticket", { ticket_id });
             }
-          } catch (err) {
-            log.error(err);
-            client.emit("error", { err });
-          }
-        })
-      );
+          })
+        );
+      } catch (err) {
+        log.error(err);
+        client.emit("error", { err });
+      }
     });
 
     client.on("watch-ticket", (data) => {
+      log.info("Watching ticket...");
       isAuthenticated(data, async ({ ticket_id }) => {
         log.info("Watching ticket");
         await client.join(ticket_id);
@@ -108,12 +134,14 @@ const startSocketServer = (httpServer) => {
     });
 
     client.on("unwatch-ticket", (data) => {
+      log.info("Unwatching ticket...");
       isAuthenticated(data, async ({ ticket_id }) => {
         client.leave(ticket_id);
       });
     });
 
     client.on("new-comment", (data) => {
+      log.info("Adding comment...");
       isAuthenticated(data, async ({ token, ticket_id, comment }) => {
         const decoded = jwt.decode(token);
         const user_id = decoded.id;
@@ -125,7 +153,9 @@ const startSocketServer = (httpServer) => {
     });
 
     client.on("disconnect", () => {
-      log.info("Client disconnected");
+      log.info(
+        `Client disconnected - Active Clients: ${io.engine.clientsCount}`
+      );
     });
   });
 

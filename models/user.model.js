@@ -62,6 +62,7 @@ userSchema.pre("validate", function (next) {
       next();
     })
     .catch((err) => {
+      console.log(err);
       next(err);
     });
 });
