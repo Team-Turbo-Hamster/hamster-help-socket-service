@@ -84,6 +84,8 @@ const startSocketServer = (httpServer) => {
           const { ticket: newTicket, verifiedToken } = data;
           const { username } = verifiedToken;
 
+          console.log(verifiedToken, "verified token");
+
           create({ ...newTicket, username })
             .then((ticket) => {
               client.join(ticket.id);
@@ -160,13 +162,13 @@ const startSocketServer = (httpServer) => {
       isAuthenticated(data, async ({ verifiedToken, ticket_id, comment }) => {
         const user_id = verifiedToken._id;
 
-        const { updatedTicket, user } = await addComment({
+        const updatedTicket = await addComment({
           ticket_id,
           user_id,
           comment,
         });
 
-        io.of("/").to(ticket_id).emit("new-comment", { updatedTicket, user });
+        io.of("/").to(ticket_id).emit("new-comment", { updatedTicket });
       });
     });
 
