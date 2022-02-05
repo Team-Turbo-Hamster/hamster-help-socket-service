@@ -159,9 +159,9 @@ const startSocketServer = (httpServer) => {
 
     client.on("new-comment", (data) => {
       log.info("Adding comment...");
+      console.log(data, "8888888888888");
       isAuthenticated(data, async ({ verifiedToken, ticket_id, comment }) => {
         const user_id = verifiedToken._id;
-
         const updatedTicket = await addComment({
           ticket_id,
           user_id,
