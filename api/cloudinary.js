@@ -7,15 +7,24 @@ cloudinary.config({
 });
 
 const uploadImages = async (images, preset) => {
-  const uploadedImages = [];
+  // const uploadedImages = [];
 
-  for (image in images) {
-    const img = await cloudinary.uploader.upload(image, {
-      upload_preset: preset,
-    });
+  // for (image in images) {
+  //   const img = await cloudinary.uploader.upload(image, {
+  //     upload_preset: preset,
+  //   });
 
-    uploadedImages.push(img.public_id);
-  }
+  //   uploadedImages.push(img.public_id);
+  // }
+  const uploadedImages = await Promise.all(
+    images.map(async (image) => {
+      const img = await cloudinary.uploader.upload(image, {
+        upload_preset: preset,
+      });
+
+      return img.public_id;
+    })
+  );
 
   return uploadedImages;
 };

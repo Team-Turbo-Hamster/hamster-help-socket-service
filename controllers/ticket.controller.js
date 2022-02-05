@@ -1,6 +1,7 @@
 const log = require("loglevel");
 const Ticket = require("../models/ticket.model");
 const User = require("../models/user.model");
+const { uploadImages } = require("../api/cloudinary");
 
 const create = async ({
   body,
@@ -11,14 +12,24 @@ const create = async ({
   zoomLink,
   isPrivate,
 }) => {
+  console.log(images);
   const user = await User.findOne({ username });
 
   log.info(`New ticket for user ${username}`);
+
+  let uploadedImages = [];
+
+  if (images.length > 0) {
+    const data = await uploadImages(images, "tickets");
+    uploadedImages = data;
+  }
+
+  console.log(uploadImages, "=================");
   if (user) {
     const ticket = await Ticket.create({
       body,
       title,
-      images,
+      images: uploadedImages,
       user: user.id,
       tags,
       zoomLink,
@@ -72,6 +83,7 @@ const update = async ({
 };
 
 const addComment = async ({ ticket_id, user_id, comment }) => {
+  console.log("before req", "===============", ticket_id, user_id);
   const updatedTicket = await Ticket.findByIdAndUpdate(
     ticket_id,
     {
@@ -85,7 +97,7 @@ const addComment = async ({ ticket_id, user_id, comment }) => {
       model: "User",
     },
   });
-
+  console.log("after req", updatedTicket);
   return updatedTicket;
 };
 
